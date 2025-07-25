@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
+//Ola mundo
 /**
  * TeleOp com:
  * - Locomoção (roda_esq / roda_dir) - Gamepad 1
@@ -30,7 +31,7 @@ public class Robotica extends LinearOpMode {
 
     private static final double BRAÇO_MAX_POTENCIA = 0.6;
     private static final double GARRA_VELOCIDADE = 0.5;
-
+it
     private static final double COLETOR_ABERTO = 0.5;   // servo aberto
     private static final double COLETOR_FECHADO = 0.65; // servo fechado
 
