@@ -22,7 +22,7 @@ public class Robotica extends LinearOpMode {
 
     private DcMotor roda_esq;
     private DcMotor roda_dir;
-    private DcMotor braco;
+    private  DcMotor braco;
     private DcMotor garra;
     private Servo giro_garra;
     private Servo coletor; // Novo servo
@@ -31,9 +31,9 @@ public class Robotica extends LinearOpMode {
 
     private static final double BRAÇO_MAX_POTENCIA = 0.6;
     private static final double GARRA_VELOCIDADE = 0.5;
-it
+
     private static final double COLETOR_ABERTO = 0.5;   // servo aberto
-    private static final double COLETOR_FECHADO = 0.65; // servo fechado
+    private static final double COLETOR_FECHADO = -0.4; // servo fechado
 
     @Override
     public void runOpMode() {
@@ -41,26 +41,21 @@ it
         telemetry.update();
 
         // Inicialização dos dispositivos
-        try {
+
             roda_esq = hardwareMap.get(DcMotor.class, "roda_esq");
             roda_dir = hardwareMap.get(DcMotor.class, "roda_dir");
             braco = hardwareMap.get(DcMotor.class, "braco");
             garra = hardwareMap.get(DcMotor.class, "garra");
             giro_garra = hardwareMap.get(Servo.class, "giro_garra");
             coletor = hardwareMap.get(Servo.class, "coletor");
-        } catch (Exception e) {
-            telemetry.addData("Erro", "Dispositivo não encontrado: %s", e.getMessage());
-            telemetry.update();
-            sleep(3000);
-            return;
-        }
+
 
         // Configuração dos motores
         roda_esq.setDirection(DcMotor.Direction.REVERSE);
         roda_dir.setDirection(DcMotor.Direction.FORWARD);
         braco.setDirection(DcMotor.Direction.FORWARD);
         garra.setDirection(DcMotor.Direction.FORWARD);
-
+        
         telemetry.addData("Status", "Pronto para iniciar");
         telemetry.addData("Dicas", "Pressione START para começar");
         telemetry.update();
@@ -73,48 +68,46 @@ it
             Gamepad gamepadFuncoes = gamepad2;
 
             // === MOVIMENTO DO ROBÔ (Gamepad 1) ===
-            double frenteTras = 0.0;
-            double rotacao = gamepadMovimento.right_stick_x;
+            double drive = gamepad1.left_stick_y;
+            double turn  =  -gamepad1.right_stick_x;
+            double leftPower    = Range.clip(drive + turn, -0.8, 0.8) ;
+            double rightPower   = Range.clip(drive - turn, -0.8, 0.8) ;
+        
+            
 
-            if (gamepadMovimento.dpad_up) {
-                frenteTras = 0.5;
-            } else if (gamepadMovimento.dpad_down) {
-                frenteTras = -0.5;
-            } else if (gamepadMovimento.dpad_left) {
-                rotacao = -0.4;
-            } else if (gamepadMovimento.dpad_right) {
-                rotacao = 0.4;
-            } else {
-                frenteTras = -gamepadMovimento.left_stick_y;
-            }
-
-            double potenciaEsq = Range.clip(frenteTras + rotacao, -0.5, 0.5);
-            double potenciaDir = Range.clip(frenteTras - rotacao, -0.5, 0.5);
-
-            roda_esq.setPower(potenciaEsq);
-            roda_dir.setPower(potenciaDir);
+         
+            roda_esq.setPower(leftPower);
+            roda_dir.setPower(rightPower);
 
             // === CONTROLE DO BRAÇO (Gamepad 2) ===
-            double potenciaBraco;
-
-            if (gamepadFuncoes.y) {
-                potenciaBraco = 0.8;
-            } else if (gamepadFuncoes.x) {
-                potenciaBraco = -0.8;
+            
+            double power = -gamepad2.left_stick_y; // inverte para que "cima" suba
+            double potencia = Range.clip(power *  1.0, -1.0, 1.0);
+            if(power == 0){
+            braco.setPower(0.1);
+        }
+            braco.setPower(potencia);
+            
+            
+            braco.setPower(potencia);
+            if (gamepadFuncoes.dpad_down) {
+                potencia = 0.8;
+            } else if (gamepadFuncoes.dpad_up) {
+                potencia = -0.8;
             } else {
-                potenciaBraco = -0.01;
+                potencia = -0.01;
             }
 
-            braco.setPower(potenciaBraco);
+            
 
             // === CONTROLE DA GARRA (Motor) ===
-            if (gamepadFuncoes.a) {
-                garra.setPower(GARRA_VELOCIDADE);
-            } else if (gamepadFuncoes.b) {
-                garra.setPower(-GARRA_VELOCIDADE);
-            } else {
-                garra.setPower(0);
-            }
+            double controle = gamepad2.right_stick_y; // inverte para que "cima" suba
+            double potencia2 = Range.clip(controle *  0.7, -0.7, 0.7);
+            if(controle == 0){
+            garra.setPower(0.2);
+        }
+        garra.setPower(potencia2);
+           
 
             // === GIRO DA GARRA (Servo) ===
             if (gamepad2.left_bumper) {
@@ -140,7 +133,7 @@ it
             telemetry.addData("  DPAD Baixo", gamepadMovimento.dpad_down ? "✅ Pressionado" : "❌");
             telemetry.addData("  DPAD Esq", gamepadMovimento.dpad_left ? "✅ Pressionado" : "❌");
             telemetry.addData("  DPAD Dir", gamepadMovimento.dpad_right ? "✅ Pressionado" : "❌");
-            telemetry.addData("  Stick Esq Y", "%.2f", -gamepadMovimento.left_stick_y);
+            telemetry.addData("  Stick Esq Y", "%.2f", power);
 
             // Gamepad 2 - Funções
             telemetry.addLine("");
@@ -157,8 +150,7 @@ it
             // Estado dos atuadores
             telemetry.addLine("");
             telemetry.addLine("⚙️ Estado dos Atuadores");
-            telemetry.addData("  Roda Esq", "Potência: %.2f", potenciaEsq);
-            telemetry.addData("  Roda Dir", "Potência: %.2f", potenciaDir);
+            
             telemetry.addData("  Braço", "Potência: %.2f", braco.getPower());
             telemetry.addData("  Garra (Motor)", "Potência: %.2f", garra.getPower());
             telemetry.addData("  Giro Garra", "Posição: %.2f", giro_garra.getPosition());
