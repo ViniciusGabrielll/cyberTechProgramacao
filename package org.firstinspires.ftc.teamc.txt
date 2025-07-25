@@ -24,7 +24,7 @@ public class Robotica extends LinearOpMode {
     private DcMotor braco;
     private DcMotor garra;
     private Servo giro_garra;
-    private Servo coletor;
+    private Servo coletor; // Novo servo
 
     private final ElapsedTime runtime = new ElapsedTime();
 
