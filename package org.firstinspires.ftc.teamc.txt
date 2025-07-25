@@ -1,0 +1,173 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.Gamepad;
+
+/**
+ * TeleOp com:
+ * - Locomoção (roda_esq / roda_dir) - Gamepad 1
+ * - Braço (subir: Y / descer: X) - Gamepad 2
+ * - Garra (abrir: A / fechar: B) - Gamepad 2 (como DcMotor)
+ * - Giro da garra (frente: LB / cima: RB) - Gamepad 2
+ * - Servo coletor (abrir: LT / fechar: RT) - Gamepad 2
+ */
+@TeleOp(name = "TeleOp com Telemetria", group = "TeleOp")
+public class Robotica extends LinearOpMode {
+
+    private DcMotor roda_esq;
+    private DcMotor roda_dir;
+    private DcMotor braco;
+    private DcMotor garra;
+    private Servo giro_garra;
+    private Servo coletor;
+
+    private final ElapsedTime runtime = new ElapsedTime();
+
+    private static final double BRAÇO_MAX_POTENCIA = 0.6;
+    private static final double GARRA_VELOCIDADE = 0.5;
+
+    private static final double COLETOR_ABERTO = 0.5;   // servo aberto
+    private static final double COLETOR_FECHADO = 0.65; // servo fechado
+
+    @Override
+    public void runOpMode() {
+        telemetry.addData("Status", "Inicializando hardware...");
+        telemetry.update();
+
+        // Inicialização dos dispositivos
+        try {
+            roda_esq = hardwareMap.get(DcMotor.class, "roda_esq");
+            roda_dir = hardwareMap.get(DcMotor.class, "roda_dir");
+            braco = hardwareMap.get(DcMotor.class, "braco");
+            garra = hardwareMap.get(DcMotor.class, "garra");
+            giro_garra = hardwareMap.get(Servo.class, "giro_garra");
+            coletor = hardwareMap.get(Servo.class, "coletor");
+        } catch (Exception e) {
+            telemetry.addData("Erro", "Dispositivo não encontrado: %s", e.getMessage());
+            telemetry.update();
+            sleep(3000);
+            return;
+        }
+
+        // Configuração dos motores
+        roda_esq.setDirection(DcMotor.Direction.REVERSE);
+        roda_dir.setDirection(DcMotor.Direction.FORWARD);
+        braco.setDirection(DcMotor.Direction.FORWARD);
+        garra.setDirection(DcMotor.Direction.FORWARD);
+
+        telemetry.addData("Status", "Pronto para iniciar");
+        telemetry.addData("Dicas", "Pressione START para começar");
+        telemetry.update();
+
+        waitForStart();
+        runtime.reset();
+
+        while (opModeIsActive()) {
+            Gamepad gamepadMovimento = gamepad1;
+            Gamepad gamepadFuncoes = gamepad2;
+
+            // === MOVIMENTO DO ROBÔ (Gamepad 1) ===
+            double frenteTras = 0.0;
+            double rotacao = gamepadMovimento.right_stick_x;
+
+            if (gamepadMovimento.dpad_up) {
+                frenteTras = 0.5;
+            } else if (gamepadMovimento.dpad_down) {
+                frenteTras = -0.5;
+            } else if (gamepadMovimento.dpad_left) {
+                rotacao = -0.4;
+            } else if (gamepadMovimento.dpad_right) {
+                rotacao = 0.4;
+            } else {
+                frenteTras = -gamepadMovimento.left_stick_y;
+            }
+
+            double potenciaEsq = Range.clip(frenteTras + rotacao, -0.5, 0.5);
+            double potenciaDir = Range.clip(frenteTras - rotacao, -0.5, 0.5);
+
+            roda_esq.setPower(potenciaEsq);
+            roda_dir.setPower(potenciaDir);
+
+            // === CONTROLE DO BRAÇO (Gamepad 2) ===
+            double potenciaBraco;
+
+            if (gamepadFuncoes.y) {
+                potenciaBraco = 0.8;
+            } else if (gamepadFuncoes.x) {
+                potenciaBraco = -0.8;
+            } else {
+                potenciaBraco = -0.01;
+            }
+
+            braco.setPower(potenciaBraco);
+
+            // === CONTROLE DA GARRA (Motor) ===
+            if (gamepadFuncoes.a) {
+                garra.setPower(GARRA_VELOCIDADE);
+            } else if (gamepadFuncoes.b) {
+                garra.setPower(-GARRA_VELOCIDADE);
+            } else {
+                garra.setPower(0);
+            }
+
+            // === GIRO DA GARRA (Servo) ===
+            if (gamepad2.left_bumper) {
+                giro_garra.setPosition(1.0);
+            } else if (gamepad2.right_bumper) {
+                giro_garra.setPosition(0.0);
+            }
+
+            // === COLETOR (Servo) ===
+            if (gamepad2.left_trigger >= 0.5) {
+                coletor.setPosition(COLETOR_ABERTO);
+            } else if (gamepad2.right_trigger >= 0.5) {
+                coletor.setPosition(COLETOR_FECHADO);
+            }
+
+            // === 🔧 TELMETRIA DETALHADA ===
+            telemetry.addLine("🔧 TELEMETRIA - CONTROLES");
+            telemetry.addLine("━━━━━━━━━━━━━━━━━━━━━━━━");
+
+            // Gamepad 1 - Movimento
+            telemetry.addLine("🎮 Gamepad 1 (Movimento)");
+            telemetry.addData("  DPAD Cima", gamepadMovimento.dpad_up ? "✅ Pressionado" : "❌");
+            telemetry.addData("  DPAD Baixo", gamepadMovimento.dpad_down ? "✅ Pressionado" : "❌");
+            telemetry.addData("  DPAD Esq", gamepadMovimento.dpad_left ? "✅ Pressionado" : "❌");
+            telemetry.addData("  DPAD Dir", gamepadMovimento.dpad_right ? "✅ Pressionado" : "❌");
+            telemetry.addData("  Stick Esq Y", "%.2f", -gamepadMovimento.left_stick_y);
+
+            // Gamepad 2 - Funções
+            telemetry.addLine("");
+            telemetry.addLine("⚙️ Gamepad 2 (Funções)");
+            telemetry.addData("  Botão Y", gamepadFuncoes.y ? "⬆️ Subindo braço" : "");
+            telemetry.addData("  Botão X", gamepadFuncoes.x ? "⬇️ Descendo braço" : "");
+            telemetry.addData("  Botão A", gamepadFuncoes.a ? "🔓 Abrindo garra" : "");
+            telemetry.addData("  Botão B", gamepadFuncoes.b ? "🔒 Fechando garra" : "");
+            telemetry.addData("  LB", gamepad2.left_bumper ? "🔄 Giro frente" : "");
+            telemetry.addData("  RB", gamepad2.right_bumper ? "🔄 Giro cima" : "");
+            telemetry.addData("  LT", gamepad2.left_trigger >= 0.5 ? "🔓 Coletor aberto" : "");
+            telemetry.addData("  RT", gamepad2.right_trigger >= 0.5 ? "🔒 Coletor fechado" : "");
+
+            // Estado dos atuadores
+            telemetry.addLine("");
+            telemetry.addLine("⚙️ Estado dos Atuadores");
+            telemetry.addData("  Roda Esq", "Potência: %.2f", potenciaEsq);
+            telemetry.addData("  Roda Dir", "Potência: %.2f", potenciaDir);
+            telemetry.addData("  Braço", "Potência: %.2f", braco.getPower());
+            telemetry.addData("  Garra (Motor)", "Potência: %.2f", garra.getPower());
+            telemetry.addData("  Giro Garra", "Posição: %.2f", giro_garra.getPosition());
+            telemetry.addData("  Coletor", "Posição: %.2f", coletor.getPosition());
+
+            // Tempo
+            telemetry.addLine("");
+            telemetry.addData("⏱️ Tempo", "%.1f s", runtime.seconds());
+
+            telemetry.update();
+        }
+    }
+}
