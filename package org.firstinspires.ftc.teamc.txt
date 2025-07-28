@@ -104,7 +104,7 @@ public class Robotica extends LinearOpMode {
             double controle = gamepad2.right_stick_y; // inverte para que "cima" suba
             double potencia2 = Range.clip(controle *  0.7, -0.7, 0.7);
             if(controle == 0){
-            garra.setPower(0.2);
+            garra.setPower(-0.2);
         }
         garra.setPower(potencia2);
            
