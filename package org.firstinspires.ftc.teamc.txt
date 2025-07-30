@@ -33,9 +33,6 @@ public class Robotica extends LinearOpMode {
     private static final double BRAÇO_MAX_POTENCIA = 0.6;
     private static final double GARRA_VELOCIDADE = 0.5;
 
-    private static final double COLETOR_ABERTO = 0.1;   // servo aberto
-    private static final double COLETOR_FECHADO = -0.1; // servo fechado
-
     @Override
     public void runOpMode() {
         telemetry.addData("Status", "Inicializando hardware...");
@@ -100,7 +97,6 @@ public class Robotica extends LinearOpMode {
             }
 
 
-
             // === CONTROLE DA GARRA (Motor) ===
             double controle = gamepad2.right_stick_y; // inverte para que "cima" suba
             double potencia2 = Range.clip(controle *  0.7, -0.7, 0.7);
@@ -110,17 +106,17 @@ public class Robotica extends LinearOpMode {
             garra.setPower(potencia2);
 
             if (gamepad2.right_trigger > 0.1)   {
-                giro_garra.setPower(0.6);
-            } else if (gamepad2.left_trigger > 0.1) {
-                giro_garra.setPower(-0.6);
+                giro_garra.setPower(1.0);
+            } else if (gamepad2.left_trigger > 0.0) {
+                giro_garra.setPower(-1.0);
             } else {
                 giro_garra.setPower(0);
             }
             // === GIRO DA GARRA (Servo) ===
             if (gamepad2.right_bumper == true) {
-                coletor.setPower(COLETOR_ABERTO);
+                coletor.setPower(1.0);
             } else if (gamepad2.left_bumper == true) {
-                coletor.setPower(COLETOR_FECHADO);
+                coletor.setPower(-1.0);
             }else {
                 coletor.setPower(0);
             }
@@ -141,7 +137,7 @@ public class Robotica extends LinearOpMode {
 
             // Gamepad 2 - Funções
             telemetry.addLine("");
-            telemetry.addLine(⚙️ Gamepad 2 (Funções)");
+            telemetry.addLine("⚙️ Gamepad 2 (Funções)");
             telemetry.addData("  Botão Y", gamepadFuncoes.y ? "⬆️ Subindo braço" : "");
             telemetry.addData("  Botão X", gamepadFuncoes.x ? "⬇️ Descendo braço" : "");
             telemetry.addData("  Botão A", gamepadFuncoes.a ? "🔓 Abrindo garra" : "");
