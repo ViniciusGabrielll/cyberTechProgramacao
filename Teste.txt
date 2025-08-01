@@ -1,0 +1,122 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+@Autonomous(name = "Teste", group = "FTC")
+public class Teste extends LinearOpMode {
+
+    private DcMotor roda_esq = null;
+    private DcMotor roda_dir = null;
+    private DcMotor braco = null;
+    private DcMotor garra = null;
+    private CRServo giro_garra = null;
+    private CRServo coletor = null;
+
+    private ElapsedTime tempo = new ElapsedTime();
+
+    @Override
+    public void runOpMode() {
+
+        // Mapeamento dos motores e servos conforme nomes do Driver Station
+        roda_esq = hardwareMap.get(DcMotor.class, "roda_esq");
+        roda_dir = hardwareMap.get(DcMotor.class, "roda_dir");
+        braco = hardwareMap.get(DcMotor.class, "braco");
+        garra = hardwareMap.get(DcMotor.class, "garra");
+        giro_garra = hardwareMap.get(CRServo.class, "giro_garra");
+        coletor = hardwareMap.get(CRServo.class, "coletor");
+
+        // Ajustar direção da roda esquerda se necessário
+        roda_esq.setDirection(DcMotor.Direction.REVERSE);
+
+        waitForStart();
+        tempo.reset();
+
+        if (opModeIsActive()) {
+
+            moverPorMetros(3.0, 1);
+            
+            // 6. Parar
+            pararMotores();
+        }
+    }
+
+    private void moverPorMetros(double metros, double power) {
+        roda_esq.setPower(-power);
+        roda_dir.setPower(-power);
+        int tempo = (int) ((metros * 3000 / (power * 10)));
+        sleep(tempo);
+        pararMotores();
+        sleep(1000);
+    }
+    
+    //sleep((int) (metros * 450) para setPower de 0.6;
+    
+    private void mover(double power, long tempoMs) {
+        power = power / 100;
+        roda_esq.setPower(-power);
+        roda_dir.setPower(-power);
+        sleep(tempoMs);
+        pararMotores();
+        sleep(1000);
+    }
+
+    private void coletar(double power, long tempoMs) {
+        coletor.setPower(power);
+        sleep(tempoMs);
+        coletor.setPower(0);
+    }
+
+    private void liberarColeta() {
+        coletor.setPower(-1.0);
+        sleep(500);
+        coletor.setPower(0);
+    }
+
+    private void elevar(double power, long tempoMs) {
+        braco.setPower(power);
+        sleep(tempoMs);
+        braco.setPower(0.01);
+    }
+
+    private void ajustarGiroGarra(double power, long tempoMs) {
+        giro_garra.setPower(power);
+        sleep(tempoMs);
+        giro_garra.setPower(0);
+    }
+
+    private void acionarGarra(double power, long tempoMs) {
+        garra.setPower(power);
+        sleep(tempoMs);
+        garra.setPower(0);
+    }
+
+    private void pararMotores() {
+        roda_esq.setPower(0);
+        roda_dir.setPower(0);
+    }
+    
+    private void girar(double power, long tempoMs) {
+        roda_esq.setPower(power);
+        roda_dir.setPower(-power);
+        sleep(tempoMs);
+        pararMotores();
+    }
+    
+    private static int doubleToInt(double value) {
+        boolean eNegativo = value < 0;
+        value = eNegativo ? -value : value;
+        
+        int resultado = 0;
+        
+        while (value >= 1) {
+            resultado++;
+            value += 1;
+        }
+        
+        return eNegativo ? -resultado : resultado;    
+    }
+}
