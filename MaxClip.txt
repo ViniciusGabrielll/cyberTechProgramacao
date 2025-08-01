@@ -1,0 +1,233 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.CRServo;
+
+@Autonomous(name = "MaxClip", group = "FTC")
+public class MaxClip extends LinearOpMode {
+
+    // Motores
+    private DcMotor roda_esq = null;
+    private DcMotor roda_dir = null;
+    private DcMotor braco = null;
+    private DcMotor garra = null;
+    private CRServo giro_garra = null;
+    private CRServo coletor = null;
+
+    // Constantes de movimento (AJUSTE CONFORME SEU ROBÔ!)
+    private static final double WHEEL_DIAMETER_CM = 10.0;
+    private static final double WHEEL_CIRCUMFERENCE_CM = WHEEL_DIAMETER_CM * Math.PI;
+    private static final double TICKS_PER_REV = 560; // Ex: Motor 20: 560 ticks
+    private static final double TICKS_PER_CM = TICKS_PER_REV / WHEEL_CIRCUMFERENCE_CM;
+
+    private static final int BRAÇO_MAX_TICKS = 1500;
+    private static final double BRAÇO_0_4_TICKS = BRAÇO_MAX_TICKS * 0.6;
+
+    private static final double ROBOT_TRACK_WIDTH_CM = 30.0;
+    private static final double DEGREES_TO_TICKS = (ROBOT_TRACK_WIDTH_CM * Math.PI / 360.0) * TICKS_PER_CM;
+
+    @Override
+    public void runOpMode() {
+
+        // Inicializar hardware
+        roda_esq = hardwareMap.get(DcMotor.class, "roda_esq");
+        roda_dir = hardwareMap.get(DcMotor.class, "roda_dir");
+        braco = hardwareMap.get(DcMotor.class, "braco");
+        garra = hardwareMap.get(DcMotor.class, "garra");
+        giro_garra = hardwareMap.get(CRServo.class, "giro_garra");
+        coletor = hardwareMap.get(CRServo.class, "coletor");
+
+        // Direção
+        roda_esq.setDirection(DcMotor.Direction.REVERSE);
+        roda_dir.setDirection(DcMotor.Direction.FORWARD);
+
+        // Modo encoder
+        roda_esq.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        roda_dir.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        braco.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        roda_esq.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        roda_dir.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        braco.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        telemetry.addData("Status", "Aguardando início...");
+        telemetry.update();
+
+        waitForStart();
+
+        if (opModeIsActive()) {
+
+            // === 0. LEVANTAR BRAÇO EM 0.4 DA ALTURA ===
+            telemetry.addData("Missão", "Levantando braço (0.4 de altura)...");
+            telemetry.update();
+            moverBracoPara((int) BRAÇO_0_4_TICKS, 0.6); // Potência 0.4
+
+            // === MANTER BRAÇO LEVANTADO COM FORÇA LEVE (-0.05) PARA EVITAR QUEDA ===
+            braco.setPower(-0.05); // Força leve para segurar posição
+            sleep(100); // Pequena pausa para estabilizar
+
+            // === 1. Andar 300 cm para frente ===
+            telemetry.addData("Missão", "Andando 300 cm para frente...");
+            telemetry.update();
+            moverEmLinhaRetta(-150, 0.6); // 1.5 metros para frente (ajuste seu valor real aqui)
+
+            // === 2. Voltar metade da distância original (150 → 75 cm) ===
+            telemetry.addData("Missão", "Voltando 75 cm (metade)...");
+            telemetry.update();
+            moverEmLinhaRetta(40, 0.6); // Metade da distância de ré
+
+            // === 3. Girar 90° para a direita mais rápido (menos tempo) ===
+            telemetry.addData("Missão", "Girando 90 graus para a direita (mais rápido)...");
+            telemetry.update();
+            girarRobo(90, 0.7); // Aumentei potência de 0.5 para 0.7 → giro mais rápido
+
+            // === 4. ABAIXAR BRAÇO ===
+            telemetry.addData("Missão", "Abaixando braço...");
+            telemetry.update();
+            moverBracoPara(0, -1.0); // Volta ao zero
+
+            // === 5. ABRIR GARPA ===
+            telemetry.addData("Missão", "Abrindo garra...");
+            telemetry.update();
+            acionarGarra(1.0, 300);
+
+            // === 6. GIRAR GIRO_GARRA PARA COLETA ===
+            telemetry.addData("Missão", "Girando giro_garra...");
+            telemetry.update();
+            ajustarGiroGarra(1.0, 400);
+
+            // === 7. LIGAR COLETOR ===
+            telemetry.addData("Missão", "Ligando coletor...");
+            telemetry.update();
+            coletar(1.0, 1000);
+
+            // === 8. FECHAR GARPA com mais suavidade ===
+            telemetry.addData("Missão", "Fechando garra com mais suavidade...");
+            telemetry.update();
+            acionarGarra(-0.6, 300); // Potência reduzida de -1.0 para -0.6 → mais suave
+
+            // === FIM ===
+            pararTudo();
+            telemetry.addData("Missão", "Concluída!");
+            telemetry.update();
+            sleep(1000);
+        }
+    }
+
+    // ==============================
+    // MÉTODOS AUXILIARES COM ENCODER
+    // ==============================
+
+    /**
+     * Move em linha reta uma distância em cm
+     * @param distanciaCm Positivo = frente, Negativo = trás
+     * @param power Potência (0.0 a 1.0)
+     */
+    private void moverEmLinhaRetta(double distanciaCm, double power) {
+        int ticks = (int) (distanciaCm * TICKS_PER_CM);
+
+        roda_esq.setTargetPosition(ticks);
+        roda_dir.setTargetPosition(ticks);
+
+        roda_esq.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        roda_dir.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        roda_esq.setPower(power);
+        roda_dir.setPower(power);
+
+        while (opModeIsActive() && (roda_esq.isBusy() || roda_dir.isBusy())) {
+            idle(); // Espera
+        }
+
+        pararMotores();
+    }
+
+    /**
+     * Gira o robô por graus
+     * @param graus Positivo = direita, Negativo = esquerda
+     * @param power Potência
+     */
+    private void girarRobo(double graus, double power) {
+        int ticks = (int) (graus * DEGREES_TO_TICKS);
+
+        roda_esq.setTargetPosition(ticks);
+        roda_dir.setTargetPosition(-ticks);
+
+        roda_esq.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        roda_dir.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        roda_esq.setPower(power);
+        roda_dir.setPower(power);
+
+        while (opModeIsActive() && (roda_esq.isBusy() || roda_dir.isBusy())) {
+            idle();
+        }
+
+        pararMotores();
+    }
+
+    /**
+     * Move o braço para uma posição em ticks
+     * @param ticks Ticks absolutos (0 = base, + = subir)
+     * @param power Potência (módulo)
+     */
+    private void moverBracoPara(int ticks, double power) {
+        braco.setTargetPosition(ticks);
+        braco.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        braco.setPower(Math.abs(power)); // Potência sempre positiva
+
+        while (opModeIsActive() && braco.isBusy()) {
+            idle();
+        }
+
+        braco.setPower(0);
+    }
+
+    /**
+     * Controla o coletor (CRServo)
+     */
+    private void coletar(double power, long tempoMs) {
+        coletor.setPower(power);
+        sleep(tempoMs);
+        coletor.setPower(0);
+    }
+
+    /**
+     * Ajusta a rotação da garra (servo contínuo)
+     */
+    private void ajustarGiroGarra(double power, long tempoMs) {
+        giro_garra.setPower(power);
+        sleep(tempoMs);
+        giro_garra.setPower(0);
+    }
+
+    /**
+     * Abre ou fecha a garra (motor DC)
+     */
+    private void acionarGarra(double power, long tempoMs) {
+        garra.setPower(power);
+        sleep(tempoMs);
+        garra.setPower(0);
+    }
+
+    /**
+     * Para motores de movimento
+     */
+    private void pararMotores() {
+        roda_esq.setPower(0);
+        roda_dir.setPower(0);
+    }
+
+    /**
+     * Para todos os atuadores
+     */
+    private void pararTudo() {
+        pararMotores();
+        braco.setPower(0);
+        coletor.setPower(0);
+        giro_garra.setPower(0);
+        garra.setPower(0);
+    }
+}

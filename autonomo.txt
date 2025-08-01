@@ -1,57 +1,108 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
-@TeleOp(name = "Robotica2 (Blocks to Java)")
+@Autonomous(name = "Autonomo3x3", group = "FTC")
 public class Autonomo extends LinearOpMode {
 
-  private DcMotor roda_dir;
-  private DcMotor roda_esq;
+    private DcMotor roda_esq = null;
+    private DcMotor roda_dir = null;
+    private DcMotor braco = null;
+    private DcMotor garra = null;
+    private CRServo giro_garra = null;
+    private CRServo coletor = null;
 
-  /**
-   * This sample contains the bare minimum Blocks for any regular OpMode. The 3 blue
-   * Comment Blocks show where to place Initialization code (runs once, after touching the
-   * DS INIT button, and before touching the DS Start arrow), Run code (runs once, after
-   * touching Start), and Loop code (runs repeatedly while the OpMode is active, namely not
-   * Stopped).
-   */
-  @Override
-  public void runOpMode() {
-    roda_dir = hardwareMap.get(DcMotor.class, "roda_dir");
-    roda_esq = hardwareMap.get(DcMotor.class, "roda_esq");
+    private ElapsedTime tempo = new ElapsedTime();
 
-    waitForStart();
-    roda_dir.setDirection(DcMotor.Direction.FORWARD);
-    roda_esq.setDirection(DcMotor.Direction.REVERSE);
-    roda_dir.setTargetPosition(-3000);
-    roda_esq.setTargetPosition(-3000);
-    roda_dir.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-    roda_esq.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-    ((DcMotorEx) roda_dir).setVelocity(1000);
-    ((DcMotorEx) roda_esq).setVelocity(1000);
-    sleep(5000);
-    roda_dir.setDirection(DcMotor.Direction.REVERSE);
-    roda_esq.setDirection(DcMotor.Direction.FORWARD);
-    roda_dir.setTargetPosition(180);
-    roda_esq.setTargetPosition(180);
-    roda_dir.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-    roda_esq.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-    sleep(5000);
-    roda_dir.setTargetPosition(180);
-    roda_esq.setTargetPosition(180);
-    roda_dir.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-    roda_esq.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-    ((DcMotorEx) roda_dir).setVelocity(-1000);
-    ((DcMotorEx) roda_esq).setVelocity(0);
-    if (opModeIsActive()) {
-      // Put run blocks here.
-      while (opModeIsActive()) {
-        // Put loop blocks here.
-        telemetry.update();
-      }
+    @Override
+    public void runOpMode() {
+
+        // Mapeamento dos motores e servos conforme nomes do Driver Station
+        roda_esq = hardwareMap.get(DcMotor.class, "roda_esq");
+        roda_dir = hardwareMap.get(DcMotor.class, "roda_dir");
+        braco = hardwareMap.get(DcMotor.class, "braco");
+        garra = hardwareMap.get(DcMotor.class, "garra");
+        giro_garra = hardwareMap.get(CRServo.class, "giro_garra");
+        coletor = hardwareMap.get(CRServo.class, "coletor");
+
+        // Ajustar direção da roda esquerda se necessário
+        roda_esq.setDirection(DcMotor.Direction.REVERSE);
+
+        waitForStart();
+        tempo.reset();
+
+        if (opModeIsActive()) {
+
+            // 1. Ir até o primeiro objeto
+            elevar(0.8, 700);
+            mover(50, 2100);
+            pararMotores();
+            sleep(1000);
+            mover(-50, 300);
+            
+            
+            
+            // 6. Parar
+            pararMotores();
+        }
     }
-  }
+
+    // ==============================
+    // Funções Auxiliares
+    // ==============================
+
+    private void mover(double power, long tempoMs) {
+        power = power / 100;
+        roda_esq.setPower(-power);
+        roda_dir.setPower(-power);
+        sleep(tempoMs);
+        pararMotores();
+        sleep(1000);
+    }
+
+    private void coletar(double power, long tempoMs) {
+        coletor.setPower(power);
+        sleep(tempoMs);
+        coletor.setPower(0);
+    }
+
+    private void liberarColeta() {
+        coletor.setPower(-1.0);
+        sleep(500);
+        coletor.setPower(0);
+    }
+
+    private void elevar(double power, long tempoMs) {
+        braco.setPower(power);
+        sleep(tempoMs);
+        braco.setPower(0.01);
+    }
+
+    private void ajustarGiroGarra(double power, long tempoMs) {
+        giro_garra.setPower(power);
+        sleep(tempoMs);
+        giro_garra.setPower(0);
+    }
+
+    private void acionarGarra(double power, long tempoMs) {
+        garra.setPower(power);
+        sleep(tempoMs);
+        garra.setPower(0);
+    }
+
+    private void pararMotores() {
+        roda_esq.setPower(0);
+        roda_dir.setPower(0);
+    }
+    
+    private void girar(double power, long tempoMs) {
+        roda_esq.setPower(power);
+        roda_dir.setPower(-power);
+        sleep(tempoMs);
+        pararMotores();
+    }
 }
