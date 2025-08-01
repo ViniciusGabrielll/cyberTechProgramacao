@@ -37,8 +37,7 @@ public class Teste extends LinearOpMode {
 
         if (opModeIsActive()) {
 
-            moverPorMetros(3.0, 1);
-            
+            girar(-0.6, 370);
             // 6. Parar
             pararMotores();
         }
@@ -47,9 +46,10 @@ public class Teste extends LinearOpMode {
     private void moverPorMetros(double metros, double power) {
         roda_esq.setPower(-power);
         roda_dir.setPower(-power);
-        int tempo = (int) ((metros * 3000 / (power * 10)));
+        int tempo = (int) ((metros * 4500 / (power * 10)));
         sleep(tempo);
         pararMotores();
+        mover(-power, 500);
         sleep(1000);
     }
     
@@ -103,6 +103,9 @@ public class Teste extends LinearOpMode {
         roda_esq.setPower(power);
         roda_dir.setPower(-power);
         sleep(tempoMs);
+        roda_esq.setPower(-power);
+        roda_dir.setPower(power);
+        sleep(100);
         pararMotores();
     }
     
