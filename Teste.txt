@@ -126,11 +126,12 @@ public class Teste extends LinearOpMode {
         if (graus < 0) {
             roda_esq.setPower(-VELO_NORMAL);
             roda_dir.setPower(VELO_NORMAL);
+	    sleep((long) -graus * 4.2);
         } else {
             roda_esq.setPower(VELO_NORMAL);
             roda_dir.setPower(-VELO_NORMAL);
+	    sleep((long) graus * 4.2);
         }
-        sleep(100);
         pararMotores();
         
     }
