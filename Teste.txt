@@ -17,6 +17,8 @@ public class Teste extends LinearOpMode {
     private CRServo coletor = null;
 
     private ElapsedTime tempo = new ElapsedTime();
+    
+    private double VELO_NORMAL = 0.4;
 
     @Override
     public void runOpMode() {
@@ -37,7 +39,8 @@ public class Teste extends LinearOpMode {
 
         if (opModeIsActive()) {
 
-            girar(-0.6, 370);
+            girarPorGraus(90);
+            
             // 6. Parar
             pararMotores();
         }
@@ -109,17 +112,27 @@ public class Teste extends LinearOpMode {
         pararMotores();
     }
     
-    private static int doubleToInt(double value) {
-        boolean eNegativo = value < 0;
-        value = eNegativo ? -value : value;
-        
-        int resultado = 0;
-        
-        while (value >= 1) {
-            resultado++;
-            value += 1;
+    private void girarPorGraus(double graus) {
+        if (graus < 0) {
+            roda_esq.setPower(VELO_NORMAL);
+            roda_dir.setPower(-VELO_NORMAL);
+            sleep((long) (-graus * 4));
+        } else {
+            roda_esq.setPower(-VELO_NORMAL);
+            roda_dir.setPower(VELO_NORMAL);
+            sleep((long) (graus * 4));
         }
         
-        return eNegativo ? -resultado : resultado;    
+        if (graus < 0) {
+            roda_esq.setPower(-VELO_NORMAL);
+            roda_dir.setPower(VELO_NORMAL);
+        } else {
+            roda_esq.setPower(VELO_NORMAL);
+            roda_dir.setPower(-VELO_NORMAL);
+        }
+        sleep(100);
+        pararMotores();
+        
     }
+    
 }
