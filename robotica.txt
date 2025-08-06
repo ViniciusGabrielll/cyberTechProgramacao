@@ -110,14 +110,16 @@ public class Robotica extends LinearOpMode {
             } else if (gamepad2.left_trigger > 0.0) {
                 giro_garra.setPower(-1.0);
             } else {
-                giro_garra.setPower(0);
+                giro_garra.setPower(0.2);
             }
+            
+            
             // === GIRO DA GARRA (Servo) ===
             if (gamepad2.right_bumper == true) {
-                coletor.setPower(1.0);
+                coletor.setPower(0.8);
             } else if (gamepad2.left_bumper == true) {
-                coletor.setPower(-1.0);
-            }else {
+                coletor.setPower(-0.8);
+            } else {
                 coletor.setPower(0);
             }
             
@@ -137,7 +139,7 @@ public class Robotica extends LinearOpMode {
 
             // Gamepad 2 - Funções
             telemetry.addLine("");
-            telemetry.addLine("⚙️ Gamepad 2 (Funções)");
+            telemetry.addLine(⚙️ Gamepad 2 (Funções)");
             telemetry.addData("  Botão Y", gamepadFuncoes.y ? "⬆️ Subindo braço" : "");
             telemetry.addData("  Botão X", gamepadFuncoes.x ? "⬇️ Descendo braço" : "");
             telemetry.addData("  Botão A", gamepadFuncoes.a ? "🔓 Abrindo garra" : "");

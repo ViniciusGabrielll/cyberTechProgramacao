@@ -5,33 +5,35 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.CRServo;
 
-@Autonomous(name = "MaxClip", group = "FTC")
+// Programa autônomo com movimentos em metros
+@Autonomous(name = "MaxClip", group = "Autônomos")
 public class MaxClip extends LinearOpMode {
 
-    // Motores
-    private DcMotor roda_esq = null;
-    private DcMotor roda_dir = null;
-    private DcMotor braco = null;
-    private DcMotor garra = null;
-    private CRServo giro_garra = null;
-    private CRServo coletor = null;
+    private DcMotor roda_esq;
+    private DcMotor roda_dir;
+    private DcMotor braco;
+    private DcMotor garra;
+    private CRServo giro_garra;
+    private CRServo coletor;
 
-    // Constantes de movimento (AJUSTE CONFORME SEU ROBÔ!)
-    private static final double WHEEL_DIAMETER_CM = 10.0;
-    private static final double WHEEL_CIRCUMFERENCE_CM = WHEEL_DIAMETER_CM * Math.PI;
-    private static final double TICKS_PER_REV = 560; // Ex: Motor 20: 560 ticks
-    private static final double TICKS_PER_CM = TICKS_PER_REV / WHEEL_CIRCUMFERENCE_CM;
+    // === CONSTANTES DO SISTEMA (ajuste conforme seu robô) ===
+    private static final double DIAMETRO_RODA_CM = 10.0;           // Ex: 10 cm
+    private static final double COMPRIMENTO_RODA_CM = DIAMETRO_RODA_CM * 3.1415; // Perímetro
+    private static final double TICKS_POR_VOLTA = 560;             // Ex: motor com 560 ticks/volta
+    private static final double TICKS_POR_CM = TICKS_POR_VOLTA / COMPRIMENTO_RODA_CM;
 
-    private static final int BRAÇO_MAX_TICKS = 1500;
-    private static final double BRAÇO_0_4_TICKS = BRAÇO_MAX_TICKS * 0.6;
+    private static final int TICKS_BRACO_MAX = 1500;               // Ticks do braço no topo
+    private static final int TICKS_BRACO_40 = (int)(TICKS_BRACO_MAX * 0.4); // 40% da altura
 
-    private static final double ROBOT_TRACK_WIDTH_CM = 30.0;
-    private static final double DEGREES_TO_TICKS = (ROBOT_TRACK_WIDTH_CM * Math.PI / 360.0) * TICKS_PER_CM;
+    private static final double LARGURA_ROBO_CM = 30.0;            // Distância entre rodas
+    private static final double TICKS_POR_GRAU = (LARGURA_ROBO_CM * 3.1415 / 360.0) * TICKS_POR_CM;
+
+    private static final double CM_POR_M = 100; // 1 metro = 100 centímetros
 
     @Override
     public void runOpMode() {
 
-        // Inicializar hardware
+        // === 1. Inicializar os componentes (conectar ao hardware) ===
         roda_esq = hardwareMap.get(DcMotor.class, "roda_esq");
         roda_dir = hardwareMap.get(DcMotor.class, "roda_dir");
         braco = hardwareMap.get(DcMotor.class, "braco");
@@ -39,11 +41,74 @@ public class MaxClip extends LinearOpMode {
         giro_garra = hardwareMap.get(CRServo.class, "giro_garra");
         coletor = hardwareMap.get(CRServo.class, "coletor");
 
-        // Direção
+        // === 2. Definir direção dos motores ===
         roda_esq.setDirection(DcMotor.Direction.REVERSE);
         roda_dir.setDirection(DcMotor.Direction.FORWARD);
 
-        // Modo encoder
+        // === 3. Configurar encoders para movimento preciso ===
+        resetarEncoders();
+
+        // === 4. Mensagem inicial ===
+        telemetry.addData("Status", "Aguardando inicio...");
+        telemetry.update();
+
+        // === 5. Esperar o início do programa ===
+        waitForStart();
+
+        if (opModeIsActive()) {
+
+            // === 6. SEQUÊNCIA AUTÔNOMA ===
+
+            // Levantar o braço até 40% da altura
+            mostrar("Levantando braco...");
+            moverMotor(braco, TICKS_BRACO_40, 0.4);
+            segurarBraco(); // Força leve para segurar posição
+
+            // Andar 3 metros para frente
+            mostrar("Andando 3 metros para frente...");
+            moverEmMetros(-3.0, 0.6);
+
+            // Voltar 1.5 metro (metade da distância)
+            mostrar("Voltando 1.5 metro...");
+            moverEmMetros(1.5, 0.6);
+
+            // Girar 90 graus para a direita (mais rápido)
+            mostrar("Girando 90 graus...");
+            girarRobo(90, 0.7);
+
+            // Abaixar o braço
+            mostrar("Abaixando braco...");
+            moverMotor(braco, 0, -1.0);
+
+            // Abrir a garra
+            mostrar("Abrindo garra...");
+            moverGarra(1.0, 300);
+
+            // Girar o giro da garra
+            mostrar("Girando giro da garra...");
+            girarGiroGarra(1.0, 400);
+
+            // Ligar o coletor
+            mostrar("Ligando coletor...");
+            ligarColetor(1.0, 1000);
+
+            // Fechar a garra com suavidade
+            mostrar("Fechando garra...");
+            moverGarra(-0.6, 300);
+
+            // Parar todos os motores
+            pararTudo();
+            mostrar("Missao concluida.");
+            sleep(1000);
+        }
+    }
+
+    // ==============================
+    // MÉTODOS AUXILIARES
+    // ==============================
+
+    // Reinicia e configura os encoders
+    private void resetarEncoders() {
         roda_esq.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         roda_dir.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         braco.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -51,82 +116,18 @@ public class MaxClip extends LinearOpMode {
         roda_esq.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         roda_dir.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         braco.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        telemetry.addData("Status", "Aguardando início...");
-        telemetry.update();
-
-        waitForStart();
-
-        if (opModeIsActive()) {
-
-            // === 0. LEVANTAR BRAÇO EM 0.4 DA ALTURA ===
-            telemetry.addData("Missão", "Levantando braço (0.4 de altura)...");
-            telemetry.update();
-            moverBracoPara((int) BRAÇO_0_4_TICKS, 0.6); // Potência 0.4
-
-            // === MANTER BRAÇO LEVANTADO COM FORÇA LEVE (-0.05) PARA EVITAR QUEDA ===
-            braco.setPower(-0.05); // Força leve para segurar posição
-            sleep(100); // Pequena pausa para estabilizar
-
-            // === 1. Andar 300 cm para frente ===
-            telemetry.addData("Missão", "Andando 300 cm para frente...");
-            telemetry.update();
-            moverEmLinhaRetta(-150, 0.6); // 1.5 metros para frente (ajuste seu valor real aqui)
-
-            // === 2. Voltar metade da distância original (150 → 75 cm) ===
-            telemetry.addData("Missão", "Voltando 75 cm (metade)...");
-            telemetry.update();
-            moverEmLinhaRetta(40, 0.6); // Metade da distância de ré
-
-            // === 3. Girar 90° para a direita mais rápido (menos tempo) ===
-            telemetry.addData("Missão", "Girando 90 graus para a direita (mais rápido)...");
-            telemetry.update();
-            girarRobo(90, 0.7); // Aumentei potência de 0.5 para 0.7 → giro mais rápido
-
-            // === 4. ABAIXAR BRAÇO ===
-            telemetry.addData("Missão", "Abaixando braço...");
-            telemetry.update();
-            moverBracoPara(0, -1.0); // Volta ao zero
-
-            // === 5. ABRIR GARPA ===
-            telemetry.addData("Missão", "Abrindo garra...");
-            telemetry.update();
-            acionarGarra(1.0, 300);
-
-            // === 6. GIRAR GIRO_GARRA PARA COLETA ===
-            telemetry.addData("Missão", "Girando giro_garra...");
-            telemetry.update();
-            ajustarGiroGarra(1.0, 400);
-
-            // === 7. LIGAR COLETOR ===
-            telemetry.addData("Missão", "Ligando coletor...");
-            telemetry.update();
-            coletar(1.0, 1000);
-
-            // === 8. FECHAR GARPA com mais suavidade ===
-            telemetry.addData("Missão", "Fechando garra com mais suavidade...");
-            telemetry.update();
-            acionarGarra(-0.6, 300); // Potência reduzida de -1.0 para -0.6 → mais suave
-
-            // === FIM ===
-            pararTudo();
-            telemetry.addData("Missão", "Concluída!");
-            telemetry.update();
-            sleep(1000);
-        }
     }
 
-    // ==============================
-    // MÉTODOS AUXILIARES COM ENCODER
-    // ==============================
+    // Mostra mensagem no Driver Station
+    private void mostrar(String texto) {
+        telemetry.addData("Status", texto);
+        telemetry.update();
+    }
 
-    /**
-     * Move em linha reta uma distância em cm
-     * @param distanciaCm Positivo = frente, Negativo = trás
-     * @param power Potência (0.0 a 1.0)
-     */
-    private void moverEmLinhaRetta(double distanciaCm, double power) {
-        int ticks = (int) (distanciaCm * TICKS_PER_CM);
+    // Move o robô em metros (negativo = frente, positivo = ré)
+    private void moverEmMetros(double metros, double potencia) {
+        double cm = metros * CM_POR_M;
+        int ticks = (int)(cm * TICKS_POR_CM);
 
         roda_esq.setTargetPosition(ticks);
         roda_dir.setTargetPosition(ticks);
@@ -134,23 +135,19 @@ public class MaxClip extends LinearOpMode {
         roda_esq.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         roda_dir.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        roda_esq.setPower(power);
-        roda_dir.setPower(power);
+        roda_esq.setPower(potencia);
+        roda_dir.setPower(potencia);
 
-        while (opModeIsActive() && (roda_esq.isBusy() || roda_dir.isBusy())) {
-            idle(); // Espera
+        while (opModeIsActive() && roda_esq.isBusy() && roda_dir.isBusy()) {
+            idle();
         }
 
         pararMotores();
     }
 
-    /**
-     * Gira o robô por graus
-     * @param graus Positivo = direita, Negativo = esquerda
-     * @param power Potência
-     */
-    private void girarRobo(double graus, double power) {
-        int ticks = (int) (graus * DEGREES_TO_TICKS);
+    // Gira o robô em graus (positivo = direita)
+    private void girarRobo(double graus, double potencia) {
+        int ticks = (int)(graus * TICKS_POR_GRAU);
 
         roda_esq.setTargetPosition(ticks);
         roda_dir.setTargetPosition(-ticks);
@@ -158,76 +155,68 @@ public class MaxClip extends LinearOpMode {
         roda_esq.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         roda_dir.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        roda_esq.setPower(power);
-        roda_dir.setPower(power);
+        roda_esq.setPower(potencia);
+        roda_dir.setPower(potencia);
 
-        while (opModeIsActive() && (roda_esq.isBusy() || roda_dir.isBusy())) {
+        while (opModeIsActive() && roda_esq.isBusy() && roda_dir.isBusy()) {
             idle();
         }
 
         pararMotores();
     }
 
-    /**
-     * Move o braço para uma posição em ticks
-     * @param ticks Ticks absolutos (0 = base, + = subir)
-     * @param power Potência (módulo)
-     */
-    private void moverBracoPara(int ticks, double power) {
-        braco.setTargetPosition(ticks);
-        braco.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        braco.setPower(Math.abs(power)); // Potência sempre positiva
+    // Move um motor com encoder para uma posição
+    private void moverMotor(DcMotor motor, int ticks, double potencia) {
+        motor.setTargetPosition(ticks);
+        motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        motor.setPower(Math.abs(potencia));
 
-        while (opModeIsActive() && braco.isBusy()) {
+        while (opModeIsActive() && motor.isBusy()) {
             idle();
         }
 
-        braco.setPower(0);
+        motor.setPower(0);
     }
 
-    /**
-     * Controla o coletor (CRServo)
-     */
-    private void coletar(double power, long tempoMs) {
-        coletor.setPower(power);
-        sleep(tempoMs);
-        coletor.setPower(0);
+    // Aplica leve força no braço para evitar queda
+    private void segurarBraco() {
+        braco.setPower(-0.05);
+        sleep(100);
     }
 
-    /**
-     * Ajusta a rotação da garra (servo contínuo)
-     */
-    private void ajustarGiroGarra(double power, long tempoMs) {
-        giro_garra.setPower(power);
-        sleep(tempoMs);
-        giro_garra.setPower(0);
-    }
-
-    /**
-     * Abre ou fecha a garra (motor DC)
-     */
-    private void acionarGarra(double power, long tempoMs) {
-        garra.setPower(power);
+    // Controla a garra (abrir/fechar)
+    private void moverGarra(double potencia, long tempoMs) {
+        garra.setPower(potencia);
         sleep(tempoMs);
         garra.setPower(0);
     }
 
-    /**
-     * Para motores de movimento
-     */
+    // Gira o mecanismo da garra
+    private void girarGiroGarra(double potencia, long tempoMs) {
+        giro_garra.setPower(potencia);
+        sleep(tempoMs);
+        giro_garra.setPower(0);
+    }
+
+    // Liga o coletor por um tempo
+    private void ligarColetor(double potencia, long tempoMs) {
+        coletor.setPower(potencia);
+        sleep(tempoMs);
+        coletor.setPower(0);
+    }
+
+    // Para os motores de locomoção
     private void pararMotores() {
         roda_esq.setPower(0);
         roda_dir.setPower(0);
     }
 
-    /**
-     * Para todos os atuadores
-     */
+    // Para todos os atuadores
     private void pararTudo() {
         pararMotores();
         braco.setPower(0);
-        coletor.setPower(0);
-        giro_garra.setPower(0);
         garra.setPower(0);
+        giro_garra.setPower(0);
+        coletor.setPower(0);
     }
 }

@@ -1,3 +1,5 @@
+
+
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -6,7 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-@Autonomous(name = "Autonomo3x3", group = "FTC")
+@Autonomous(name = "autonomo3.0", group = "FTC")
 public class Autonomo extends LinearOpMode {
 
     private DcMotor roda_esq = null;
@@ -17,6 +19,8 @@ public class Autonomo extends LinearOpMode {
     private CRServo coletor = null;
 
     private ElapsedTime tempo = new ElapsedTime();
+    
+    private double VELO_NORMAL = 0.6;
 
     @Override
     public void runOpMode() {
@@ -37,24 +41,29 @@ public class Autonomo extends LinearOpMode {
 
         if (opModeIsActive()) {
 
-            // 1. Ir até o primeiro objeto
-            elevar(0.8, 700);
-            mover(50, 2100);
-            pararMotores();
+            moverPorMetros(1.4, 0.7);
             sleep(1000);
-            mover(-50, 300);
+            girarPorGraus(-170);
             
             
             
-            // 6. Parar
+            
             pararMotores();
         }
     }
 
-    // ==============================
-    // Funções Auxiliares
-    // ==============================
-
+    private void moverPorMetros(double metros, double power) {
+        roda_esq.setPower(-power);
+        roda_dir.setPower(-power);
+        int tempo = (int) ((metros * 4500 / (power * 10)));
+        sleep(tempo);
+        pararMotores();
+        mover(-power, 500);
+        sleep(1000);
+    }
+    
+    //sleep((int) (metros * 450) para setPower de 0.6;
+    
     private void mover(double power, long tempoMs) {
         power = power / 100;
         roda_esq.setPower(-power);
@@ -103,6 +112,32 @@ public class Autonomo extends LinearOpMode {
         roda_esq.setPower(power);
         roda_dir.setPower(-power);
         sleep(tempoMs);
+        roda_esq.setPower(-power);
+        roda_dir.setPower(power);
+        sleep(100);
+        pararMotores();
+    }
+    
+    private void girarPorGraus(double graus) {
+    if (graus < 0) {
+        roda_esq.setPower(VELO_NORMAL);
+        roda_dir.setPower(-VELO_NORMAL);
+        sleep((long) (-graus * 5));
+    } else {
+        roda_esq.setPower(-VELO_NORMAL);
+        roda_dir.setPower(VELO_NORMAL);
+        sleep((long) (graus * 5));
+    }
+
+    if (graus < 0) {
+        roda_esq.setPower(-VELO_NORMAL);
+        roda_dir.setPower(VELO_NORMAL);
+        sleep((long) (-graus * 2.4)); // corrigido
+    } else {
+        roda_esq.setPower(VELO_NORMAL);
+        roda_dir.setPower(-VELO_NORMAL);
+        sleep((long) (graus * 2.4)); // corrigido
+    }
         pararMotores();
     }
 }

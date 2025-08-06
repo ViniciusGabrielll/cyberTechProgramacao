@@ -13,12 +13,12 @@ public class Teste extends LinearOpMode {
     private DcMotor roda_dir = null;
     private DcMotor braco = null;
     private DcMotor garra = null;
-    private CRServo giro_garra = null;
+    private CRServo pinca = null;
     private CRServo coletor = null;
 
     private ElapsedTime tempo = new ElapsedTime();
     
-    private double VELO_NORMAL = 0.4;
+    private double VELO_NORMAL = 0.6;
 
     @Override
     public void runOpMode() {
@@ -28,7 +28,7 @@ public class Teste extends LinearOpMode {
         roda_dir = hardwareMap.get(DcMotor.class, "roda_dir");
         braco = hardwareMap.get(DcMotor.class, "braco");
         garra = hardwareMap.get(DcMotor.class, "garra");
-        giro_garra = hardwareMap.get(CRServo.class, "giro_garra");
+        pinca = hardwareMap.get(CRServo.class, "giro_garra");
         coletor = hardwareMap.get(CRServo.class, "coletor");
 
         // Ajustar direção da roda esquerda se necessário
@@ -39,22 +39,22 @@ public class Teste extends LinearOpMode {
 
         if (opModeIsActive()) {
 
-            girarPorGraus(90);
+            
+            pincaComando(true);
+            sleep(1000);
+            pincaComando(false);
+            
+            
+            
+            
+
+            
             
             // 6. Parar
             pararMotores();
         }
     }
 
-    private void moverPorMetros(double metros, double power) {
-        roda_esq.setPower(-power);
-        roda_dir.setPower(-power);
-        int tempo = (int) ((metros * 4500 / (power * 10)));
-        sleep(tempo);
-        pararMotores();
-        mover(-power, 500);
-        sleep(1000);
-    }
     
     //sleep((int) (metros * 450) para setPower de 0.6;
     
@@ -75,8 +75,6 @@ public class Teste extends LinearOpMode {
 
     private void liberarColeta() {
         coletor.setPower(-1.0);
-        sleep(500);
-        coletor.setPower(0);
     }
 
     private void elevar(double power, long tempoMs) {
@@ -85,10 +83,14 @@ public class Teste extends LinearOpMode {
         braco.setPower(0.01);
     }
 
-    private void ajustarGiroGarra(double power, long tempoMs) {
-        giro_garra.setPower(power);
-        sleep(tempoMs);
-        giro_garra.setPower(0);
+    private void pincaComando(boolean comando) {
+        
+        while (comando) {
+            pinca.setPower(1.0);
+        } 
+        while (!comando){
+            pinca.setPower(-1.0);
+        }
     }
 
     private void acionarGarra(double power, long tempoMs) {
@@ -112,28 +114,41 @@ public class Teste extends LinearOpMode {
         pararMotores();
     }
     
+    private void moverPorMetros(double metros, double power) {
+        roda_esq.setPower(-power);
+        roda_dir.setPower(-power);
+        int tempo = (int) ((metros * 4500 / (power * 10)));
+        sleep(tempo);
+        pararMotores();
+        mover(-power, 500);
+        sleep(1000);
+    }
+    
     private void girarPorGraus(double graus) {
         if (graus < 0) {
             roda_esq.setPower(VELO_NORMAL);
             roda_dir.setPower(-VELO_NORMAL);
-            sleep((long) (-graus * 4));
+            sleep((long) (-graus * 4.2));
         } else {
             roda_esq.setPower(-VELO_NORMAL);
             roda_dir.setPower(VELO_NORMAL);
-            sleep((long) (graus * 4));
+            sleep((long) (graus * 4.2));
         }
-        
-        if (graus < 0) {
-            roda_esq.setPower(-VELO_NORMAL);
-            roda_dir.setPower(VELO_NORMAL);
-	    sleep((long) -graus * 4.2);
-        } else {
-            roda_esq.setPower(VELO_NORMAL);
-            roda_dir.setPower(-VELO_NORMAL);
-	    sleep((long) graus * 4.2);
-        }
+
         pararMotores();
         
     }
     
+    private void levantarBracoPorGraus(int graus) {
+        if (graus < 0) {
+            braco.setPower(-1.0);
+            sleep((long) (-graus * 15));
+        } else {
+            braco.setPower(1.0);
+            sleep((long) (graus * 15));
+        }
+        braco.setPower(0.2);
+    }
+    
+
 }
